@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Surveillance Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+        :root {
+            --bg:#0f172a; --fg:#e2e8f0; --card:#111827;
+            --muted:#94a3b8; --accent:#22d3ee;
+            --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+        }
+        * { box-sizing:border-box; }
+        body {
+            margin:0;
+            font-family: ui-sans-serif, system-ui;
+            background:var(--bg); color:var(--fg);
+        }
+        header {
+            padding:16px 20px;
+            border-bottom:1px solid #1f2937;
+            display:flex; justify-content:space-between;
+        }
+        h1 { font-size:20px; margin:0; }
+        .container {
+            padding:16px;
+        }
+        .card {
+            background:var(--card);
+            border:1px solid #1f2937;
+            border-radius:14px;
+            padding:14px;
+        }
+        .section-title {
+            font-size:14px;
+            color:var(--muted);
+            margin-bottom:10px;
+        }
+        .event {
+            border:1px solid #1f2937;
+            border-radius:12px;
+            padding:12px;
+            margin-bottom:12px;
+        }
+        .event-header {
+            display:flex;
+            justify-content:space-between;
+            margin-bottom:8px;
+        }
+        .badge {
+            font-size:12px;
+            padding:2px 8px;
+            border-radius:10px;
+            border:1px solid #334155;
+        }
+        .threat-0 { color:var(--ok); }
+        .threat-1 { color:var(--warn); }
+        .threat-2 { color:var(--bad); }
+
+        .object {
+            padding:8px;
+            border-left:3px solid #334155;
+            margin-top:8px;
+        }
+        .lp {
+            font-family: monospace;
+            letter-spacing:2px;
+            color:#fcd34d;
+            font-weight:600;
+        }
+        .muted { color:var(--muted); font-size:12px; }
+        img {
+            max-width:100%;
+            border-radius:8px;
+            margin-top:8px;
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <h1>Surveillance Dashboard</h1>
+    <div class="muted">RPi Prototype</div>
+    <nav>
+        <button onclick="showView('events')">Events</button>
+        <button onclick="showView('cameras')">Cameras</button>
+        <button onclick="showView('analytics')">Analytics</button>
+    </nav>
+</header>
+
+<div class="container">
+    <div class="filters">
+        <select id="threatFilter">
+            <option value="">All Threats</option>
+            <option value="0">Low</option>
+            <option value="1">Medium</option>
+            <option value="2">High</option>
+        </select>
+
+        <input type="text" id="cameraFilter" placeholder="Camera ID">
+    </div>
+
+    <div class="card">
+        <div style="display:flex; gap:10px; margin-bottom:12px;">
+            <button onclick="showView('events')">Events</button>
+            <button onclick="showView('stats')">Stats</button>
+            <button onclick="showView('about')">About</button>
+        </div>
+
+        <div id="view-events">
+            <h3 class="section-title">Recent Events</h3>
+            <div id="events" class="view">
+                <table id="eventsTable">
+                    <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Camera</th>
+                        <th>Threat</th>
+                        <th>Objects</th>
+                        <th>Vehicle</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-stats" style="display:none">
+            <h3 class="section-title">System Stats</h3>
+            <div class="muted">Coming soon</div>
+        </div>
+
+        <div id="view-about" style="display:none">
+            <h3 class="section-title">System Info</h3>
+            <div class="muted">
+                Edge cameras → Inference Node → Central Server (RPi)
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    let currentView = "events";
+
+    function showView(view) {
+        currentView = view;
+
+        document.getElementById("view-events").style.display =
+            view === "events" ? "block" : "none";
+
+        document.getElementById("view-stats").style.display =
+            view === "stats" ? "block" : "none";
+
+        document.getElementById("view-about").style.display =
+            view === "about" ? "block" : "none";
+
+        document.querySelectorAll(".view").forEach(v => v.style.display = "none");
+
+        document.getElementById(view).style.display = "block";
+    }
+
+    async function fetchEvents() {
+        try {
+            const r = await fetch("/api/events?limit=50");
+            const data = await r.json();
+            renderEvents(data.events);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function openEvent(eventId) {
+        alert("Event " + eventId + " clicked");
+    }
+
+    function renderEvents(events) {
+        const tbody = document.querySelector("#eventsTable tbody");
+        tbody.innerHTML = "";
+
+        for (const ev of events) {
+            const tr = document.createElement("tr");
+
+            const objects = ev.objects.map(o => o.object_type).join(", ");
+            const vehicle = ev.objects.find(o => o.vehicle)?.vehicle?.license_plate || "-";
+
+            tr.innerHTML = `
+            <td>${formatTime(ev.timestamp)}</td>
+            <td>${ev.camera_id}</td>
+            <td class="threat-${ev.threat_score}">${ev.threat_score}</td>
+            <td>${objects}</td>
+            <td class="lp">${vehicle}</td>
+        `;
+
+            tbody.appendChild(tr);
+        }
+    }
+
+    function formatTime(ts) {
+        return new Date(ts).toLocaleString();
+    }
+
+    fetchEvents();
+    setInterval(fetchEvents, 3000);
+</script>
+</body>
+</html>
