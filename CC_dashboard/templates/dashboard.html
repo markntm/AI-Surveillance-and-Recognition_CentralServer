@@ -7,9 +7,14 @@
 
     <style>
         :root {
-            --bg:#0f172a; --fg:#e2e8f0; --card:#111827;
-            --muted:#94a3b8; --accent:#22d3ee;
-            --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+            --bg:#0f172a;
+            --fg:#e2e8f0;
+            --card:#111827;
+            --muted:#94a3b8;
+            --accent:#22d3ee;
+            --ok:#22c55e;
+            --warn:#f59e0b;
+            --bad:#ef4444;
         }
         * { box-sizing:border-box; }
         body {
@@ -23,6 +28,20 @@
             display:flex; justify-content:space-between;
         }
         h1 { font-size:20px; margin:0; }
+        table {
+            width:100%;
+            table-layout: fixed;
+            border-collapse:collapse;
+        }
+        th, td {
+            padding:8px;
+            border-bottom:1px solid #1f2937;
+            text-align:left;
+        }
+        th {
+            color:var(--muted);
+            font-size:12px;
+        }
         .container {
             padding:16px;
         }
@@ -36,6 +55,25 @@
             font-size:14px;
             color:var(--muted);
             margin-bottom:10px;
+        }
+        .main-nav {
+            background: var(--bg); border-bottom: 1px solid #1f2937;
+            padding: 0 32px; display: flex; align-items: stretch;
+            position: sticky; top: 64px; z-index: 99; height: 49px;
+        }
+        .nav-tab {
+            padding: 0 20px; height: 49px; background: none; border: none;
+            color: var(--muted); font-size: 0.875rem; font-weight: 500;
+            cursor: pointer; position: relative; text-decoration: none;
+            display: inline-flex; align-items: center; transition: color 0.2s;
+            white-space: nowrap;
+        }
+        .nav-tab:hover { color: var(--accent); }
+        .nav-tab.active { color: var(--accent); }
+        .nav-tab.active::after {
+            content: ''; position: absolute;
+            bottom: 0; left: 0; right: 0; height: 2px;
+            background: var(--accent); border-radius: 2px 2px 0 0;
         }
         .event {
             border:1px solid #1f2937;
@@ -75,17 +113,29 @@
             border-radius:8px;
             margin-top:8px;
         }
+        .filters {
+            display:flex;
+            gap:10px;
+            margin-bottom:12px;
+        }
+        .filters input, .filters select {
+            background:#020617;
+            border:1px solid #334155;
+            color:var(--fg);
+            padding:6px;
+            border-radius:6px;
+        }
     </style>
 </head>
 
 <body>
 <header>
     <h1>Surveillance Dashboard</h1>
-    <div class="muted">RPi Prototype</div>
-    <nav>
-        <button onclick="showView('events')">Events</button>
-        <button onclick="showView('cameras')">Cameras</button>
-        <button onclick="showView('analytics')">Analytics</button>
+    <nav class="main-nav">
+        <a class="nav-tab active" href="/">Dashboard</a>
+        <a class="nav-tab" href="/events">Events</a>
+        <a class="nav-tab" href="/cameras">Cameras</a>
+        <a class="nav-tab" href="/analytics">Analytics</a>
     </nav>
 </header>
 
@@ -98,16 +148,15 @@
             <option value="2">High</option>
         </select>
 
-        <input type="text" id="cameraFilter" placeholder="Camera ID">
+        <select id="cameraFilter">
+            <option value="">All Cameras</option>
+            <option value="CAM_01">CAM 1</option>
+            <option value="CAM_02">CAM 2</option>
+            <option value="CAM_03">CAM 3</option>
+        </select>
     </div>
 
     <div class="card">
-        <div style="display:flex; gap:10px; margin-bottom:12px;">
-            <button onclick="showView('events')">Events</button>
-            <button onclick="showView('stats')">Stats</button>
-            <button onclick="showView('about')">About</button>
-        </div>
-
         <div id="view-events">
             <h3 class="section-title">Recent Events</h3>
             <div id="events" class="view">
@@ -125,41 +174,11 @@
                 </table>
             </div>
         </div>
-
-        <div id="view-stats" style="display:none">
-            <h3 class="section-title">System Stats</h3>
-            <div class="muted">Coming soon</div>
-        </div>
-
-        <div id="view-about" style="display:none">
-            <h3 class="section-title">System Info</h3>
-            <div class="muted">
-                Edge cameras → Inference Node → Central Server (RPi)
-            </div>
-        </div>
     </div>
 </div>
 
 
 <script>
-    let currentView = "events";
-
-    function showView(view) {
-        currentView = view;
-
-        document.getElementById("view-events").style.display =
-            view === "events" ? "block" : "none";
-
-        document.getElementById("view-stats").style.display =
-            view === "stats" ? "block" : "none";
-
-        document.getElementById("view-about").style.display =
-            view === "about" ? "block" : "none";
-
-        document.querySelectorAll(".view").forEach(v => v.style.display = "none");
-
-        document.getElementById(view).style.display = "block";
-    }
 
     async function fetchEvents() {
         try {
@@ -175,6 +194,14 @@
         alert("Event " + eventId + " clicked");
     }
 
+    function formatTime(timestamp) {
+        const options = { timeZone: 'Pacific/Honolulu' };
+
+        const date = new Date(timestamp).toLocaleDateString('en-US', options);
+        const time = new Date(timestamp).toLocaleTimeString('en-US', options);
+        return `${date}<br>${time}`;
+    }
+
     function renderEvents(events) {
         const tbody = document.querySelector("#eventsTable tbody");
         tbody.innerHTML = "";
@@ -183,7 +210,7 @@
             const tr = document.createElement("tr");
 
             const objects = ev.objects.map(o => o.object_type).join(", ");
-            const vehicle = ev.objects.find(o => o.vehicle)?.vehicle?.license_plate || "-";
+            const vehicle = ev.objects.find(o => o.vehicle)?.vehicle?.license_plate || "Unknown";
 
             tr.innerHTML = `
             <td>${formatTime(ev.timestamp)}</td>
@@ -195,10 +222,6 @@
 
             tbody.appendChild(tr);
         }
-    }
-
-    function formatTime(ts) {
-        return new Date(ts).toLocaleString();
     }
 
     fetchEvents();
