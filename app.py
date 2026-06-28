@@ -181,3 +181,7 @@ def ingest_event(event_in: EventIn, db: Session = Depends(get_db)):
             )
 
     return {"status": "ok", "event_id": event.id}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
