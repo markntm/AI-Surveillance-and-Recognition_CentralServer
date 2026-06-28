@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Surveillance Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+        :root {
+            --bg:#0f172a;
+            --fg:#e2e8f0;
+            --card:#111827;
+            --muted:#94a3b8;
+            --accent:#22d3ee;
+            --ok:#22c55e;
+            --warn:#f59e0b;
+            --bad:#ef4444;
+        }
+        * { box-sizing:border-box; }
+        body {
+            margin:0;
+            font-family: ui-sans-serif, system-ui;
+            background:var(--bg); color:var(--fg);
+        }
+        header {
+            padding:16px 20px;
+            border-bottom:1px solid #1f2937;
+            display:flex; justify-content:space-between;
+        }
+        h1 { font-size:20px; margin:0; }
+        table {
+            width:100%;
+            table-layout: fixed;
+            border-collapse:collapse;
+        }
+        th, td {
+            padding:8px;
+            border-bottom:1px solid #1f2937;
+            text-align:left;
+        }
+        th {
+            color:var(--muted);
+            font-size:12px;
+        }
+        .container {
+            padding:16px;
+        }
+        .card {
+            background:var(--card);
+            border:1px solid #1f2937;
+            border-radius:14px;
+            padding:14px;
+        }
+        .section-title {
+            font-size:14px;
+            color:var(--muted);
+            margin-bottom:10px;
+        }
+        .main-nav {
+            background: var(--bg); border-bottom: 1px solid #1f2937;
+            padding: 0 32px; display: flex; align-items: stretch;
+            position: sticky; top: 64px; z-index: 99; height: 49px;
+        }
+        .nav-tab {
+            padding: 0 20px; height: 49px; background: none; border: none;
+            color: var(--muted); font-size: 0.875rem; font-weight: 500;
+            cursor: pointer; position: relative; text-decoration: none;
+            display: inline-flex; align-items: center; transition: color 0.2s;
+            white-space: nowrap;
+        }
+        .nav-tab:hover { color: var(--accent); }
+        .nav-tab.active { color: var(--accent); }
+        .nav-tab.active::after {
+            content: ''; position: absolute;
+            bottom: 0; left: 0; right: 0; height: 2px;
+            background: var(--accent); border-radius: 2px 2px 0 0;
+        }
+        .event {
+            border:1px solid #1f2937;
+            border-radius:12px;
+            padding:12px;
+            margin-bottom:12px;
+        }
+        .event-header {
+            display:flex;
+            justify-content:space-between;
+            margin-bottom:8px;
+        }
+        .badge {
+            font-size:12px;
+            padding:2px 8px;
+            border-radius:10px;
+            border:1px solid #334155;
+        }
+        .threat-0 { color:var(--ok); }
+        .threat-1 { color:var(--warn); }
+        .threat-2 { color:var(--bad); }
+
+        .object {
+            padding:8px;
+            border-left:3px solid #334155;
+            margin-top:8px;
+        }
+        .lp {
+            font-family: monospace;
+            letter-spacing:2px;
+            color:#fcd34d;
+            font-weight:600;
+        }
+        .muted { color:var(--muted); font-size:12px; }
+        img {
+            max-width:100%;
+            border-radius:8px;
+            margin-top:8px;
+        }
+        .filters {
+            display:flex;
+            gap:10px;
+            margin-bottom:12px;
+        }
+        .filters input, .filters select {
+            background:#020617;
+            border:1px solid #334155;
+            color:var(--fg);
+            padding:6px;
+            border-radius:6px;
+        }
+    </style>
+</head>
+
+</html>

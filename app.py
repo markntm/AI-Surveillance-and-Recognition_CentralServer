@@ -1,5 +1,4 @@
 from fastapi import FastAPI, Depends, Header, HTTPException, Request
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -13,7 +12,6 @@ from config.secret import dev_key, allowed_IP
 
 
 app = FastAPI(title="Surveillance Dashboard", version="0.1")
-app.mount("/static", StaticFiles(directory="CC_dashboard/static"), name="static")
 templates = Jinja2Templates(directory="CC_dashboard/templates")
 Base.metadata.create_all(bind=engine)
 
@@ -44,6 +42,21 @@ def get_db():
 @app.get("/", include_in_schema=False)
 def dashboard(request: Request):
     return templates.TemplateResponse(request, "dashboard.html", {})
+
+
+@app.get("/events", include_in_schema=False)
+def events(request: Request):
+    return templates.TemplateResponse(request, "events.html", {})
+
+
+@app.get("/cameras", include_in_schema=False)
+def cameras(request: Request):
+    return templates.TemplateResponse(request, "cameras.html", {})
+
+
+@app.get("/analytics", include_in_schema=False)
+def analytics(request: Request):
+    return templates.TemplateResponse(request, "analytics.html", {})
 
 
 @app.get("/api/status")
