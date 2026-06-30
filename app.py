@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, Header, HTTPException, Request
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import os
@@ -39,24 +40,24 @@ def get_db():
         db.close()
 
 
-@app.get("/", include_in_schema=False)
+@app.get("/", include_in_schema=False, response_class=HTMLResponse)
 def dashboard(request: Request):
-    return templates.TemplateResponse(request, "dashboard.html", {})
+    return templates.TemplateResponse(request, "dashboard.html", {"request": request})
 
 
-@app.get("/events", include_in_schema=False)
+@app.get("/events", include_in_schema=False, response_class=HTMLResponse)
 def events(request: Request):
-    return templates.TemplateResponse(request, "events.html", {})
+    return templates.TemplateResponse(request, "events.html", {"request": request})
 
 
-@app.get("/cameras", include_in_schema=False)
+@app.get("/cameras", include_in_schema=False, response_class=HTMLResponse)
 def cameras(request: Request):
-    return templates.TemplateResponse(request, "cameras.html", {})
+    return templates.TemplateResponse(request, "cameras.html", {"request": request})
 
 
-@app.get("/analytics", include_in_schema=False)
+@app.get("/analytics", include_in_schema=False, response_class=HTMLResponse)
 def analytics(request: Request):
-    return templates.TemplateResponse(request, "analytics.html", {})
+    return templates.TemplateResponse(request, "analytics.html", {"request": request})
 
 
 @app.get("/api/status")
@@ -184,4 +185,4 @@ def ingest_event(event_in: EventIn, db: Session = Depends(get_db)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
