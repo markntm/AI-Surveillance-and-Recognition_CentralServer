@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Surveillance Dashboard</title>
+    <title>Cameras</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <style>
@@ -127,5 +127,44 @@
         }
     </style>
 </head>
+<header>
+    <h1>Surveillance Camera</h1>
+    <nav class="main-nav">
+        <a class="nav-tab" href="/">Dashboard</a>
+        <a class="nav-tab" href="/events">Events</a>
+        <a class="nav-tab active" href="/cameras">Cameras</a>
+        <a class="nav-tab" href="/analytics">Analytics</a>
+    </nav>
+</header>
+
+<div class="container">
+    <div class="filters">
+        <select id="activeCamera">
+            <option value="">All Cameras</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <div id="view-cameras">
+            <h3 class="section-title">All Cameras</h3>
+            <div id="cameras" class="view">
+                <table id="camerasTable">
+                    <thead>
+                    <tr>
+                        <th>Number</th>
+                        <th>Location</th>
+                        <th>Battery</th>
+                        <th>Broadcast</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 </html>

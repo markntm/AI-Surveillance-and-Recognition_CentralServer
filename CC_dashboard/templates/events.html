@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Surveillance Dashboard</title>
+    <title>Events</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <style>
@@ -130,10 +130,10 @@
 
 <body>
 <header>
-    <h1>Surveillance Dashboard</h1>
+    <h1>Surveillance Events</h1>
     <nav class="main-nav">
-        <a class="nav-tab active" href="/">Dashboard</a>
-        <a class="nav-tab" href="/events">Events</a>
+        <a class="nav-tab" href="/">Dashboard</a>
+        <a class="nav-tab active" href="/events">Events</a>
         <a class="nav-tab" href="/cameras">Cameras</a>
         <a class="nav-tab" href="/analytics">Analytics</a>
     </nav>
@@ -154,11 +154,18 @@
             <option value="CAM_02">CAM 2</option>
             <option value="CAM_03">CAM 3</option>
         </select>
+
+        <input type="date" id="dateFilter" name="dateFilter">
+
+        <select id="hasLicensePlate">
+            <option value="">All Events</option>
+            <option value="hasLP">LP Detected</option>
+        </select>
     </div>
 
     <div class="card">
         <div id="view-events">
-            <h3 class="section-title">Recent Events</h3>
+            <h3 class="section-title">All Events</h3>
             <div id="events" class="view">
                 <table id="eventsTable">
                     <thead>
@@ -167,7 +174,8 @@
                         <th>Camera</th>
                         <th>Threat</th>
                         <th>Objects</th>
-                        <th>Vehicle</th>
+                        <th>Plates</th>
+                        <th>Image</th>
                     </tr>
                     </thead>
                     <tbody></tbody>
@@ -194,6 +202,9 @@
         alert("Event " + eventId + " clicked");
     }
 
+    document.getElementById('dateFilter').valueAsDate = new Date();
+    document.getElementById('dateFilter').max = new Date().toISOString().split('T')[0];
+
     function formatTime(timestamp) {
         const options = { timeZone: 'Pacific/Honolulu' };
 
@@ -210,7 +221,8 @@
             const tr = document.createElement("tr");
 
             const objects = ev.objects.map(o => o.object_type).join(", ");
-            const vehicle = ev.objects.find(o => o.vehicle)?.vehicle?.license_plate || "Unknown";
+            const vehicle = ev.objects.find(o => o.vehicle)?.vehicle?.license_plate || "None Detected";
+            const image = "None Taken"
 
             tr.innerHTML = `
             <td>${formatTime(ev.timestamp)}</td>
@@ -218,6 +230,7 @@
             <td class="threat-${ev.threat_score}">${ev.threat_score}</td>
             <td>${objects}</td>
             <td class="lp">${vehicle}</td>
+            <td>${image}</td>
         `;
 
             tbody.appendChild(tr);
