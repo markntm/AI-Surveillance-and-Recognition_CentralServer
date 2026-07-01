@@ -22,3 +22,18 @@ class EventIn(BaseModel):
     threat_score: int
     image_path: Optional[str] = None
     objects: List[DetectedObjectIn]
+
+
+class TelemetryIn(BaseModel):
+    camera_id: str
+    workers_active: int
+    lpr_queue_size: int
+    active_tracks: int
+
+
+class LiveTrackIn(BaseModel):
+    camera_id: str
+    track_id: str
+    label: str
+    confidence: float
+    license_plate: Optional[str] = None
