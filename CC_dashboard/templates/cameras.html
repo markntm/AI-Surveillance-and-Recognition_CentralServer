@@ -139,32 +139,159 @@
 
 <div class="container">
     <div class="filters">
-        <select id="activeCamera">
+        <select id="statusFilter">
             <option value="">All Cameras</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="online">Online</option>
+            <option value="stale">Stale</option>
+            <option value="offline">Offline</option>
         </select>
     </div>
 
     <div class="card">
-        <div id="view-cameras">
-            <h3 class="section-title">All Cameras</h3>
-            <div id="cameras" class="view">
-                <table id="camerasTable">
-                    <thead>
-                    <tr>
-                        <th>Number</th>
-                        <th>Location</th>
-                        <th>Battery</th>
-                        <th>Broadcast</th>
-                    </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
+        <h3 class="section-title">Camera Health</h3>
+        <table id="telemetryTable">
+            <thead>
+            <tr>
+                <th>Camera ID</th>
+                <th>Status</th>
+                <th>Workers</th>
+                <th>LPR Queue</th>
+                <th>Active Tracks</th>
+                <th>Last Seen</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div id="empty-telemetry" style="display:none;">No cameras reporting.</div>
+    </div>
+
+    <br>
+
+    <div class="card">
+        <h3 class="section-title">Live Tracks</h3>
+        <table id="liveTable">
+            <thead>
+            <tr>
+                <th>Track ID</th>
+                <th>Camera</th>
+                <th>Label</th>
+                <th>Confidence</th>
+                <th>Plate</th>
+                <th>Last Seen</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div id="empty-live" style="display:none;">No active tracks.</div>
     </div>
 </div>
 
+<script>
+    let allTelemetry = [];
+    let allLive = []
+
+    function cameraStatus(lastSeenISO) {
+        const ageMs = Date.now() - new Date(lastSeenISO).getTime();
+        if (ageMs < 5_000)  return "online";
+        if (ageMs < 15_000) return "stale";
+        return "offline";
+    }
+
+    function relativeTime(isoString) {
+        const secs = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
+        if (secs < 2)  return "just now";
+        if (secs < 60) return `${secs}s ago`;
+        return `${Math.floor(secs / 60)}m ago`;
+    }
+
+    async function fetchTelemetry() {
+        try {
+            const r = await fetch("/api/ingest/telemetry");
+            if (!r.ok) throw new Error(r.status);
+            allTelemetry = await r.json();     // list of camera snapshots
+            renderTelemetry();
+        } catch (e) {
+            console.error("[telemetry]", e);
+        }
+    }
+
+    async function fetchLive() {
+        try {
+            const r = await fetch("/api/ingest/live");
+            if (!r.ok) throw new Error(r.status);
+            allLive = await r.json();           // list of track snapshots
+            renderLive();
+        } catch (e) {
+            console.error("[live]", e);
+        }
+    }
+
+    function renderTelemetry() {
+        const filter = document.getElementById("statusFilter").value;
+        const tbody  = document.querySelector("#telemetryTable tbody");
+        tbody.innerHTML = "";
+
+        const rows = allTelemetry.filter(cam => {
+            const s = cameraStatus(cam.last_seen);
+            return !filter || s === filter;
+        });
+
+        document.getElementById("empty-telemetry").style.display =
+            rows.length === 0 ? "block" : "none";
+
+        for (const cam of rows) {
+            const status = cameraStatus(cam.last_seen);
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${cam.camera_id}</td>
+                <td><span class="badge status-${status}">${status}</span></td>
+                <td>${cam.workers_active}</td>
+                <td>${cam.lpr_queue_size}</td>
+                <td>${cam.active_tracks}</td>
+                <td class="muted">${relativeTime(cam.last_seen)}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+    }
+
+    function renderLive() {
+        const filter = document.getElementById("statusFilter").value;
+        const tbody  = document.querySelector("#liveTable tbody");
+        tbody.innerHTML = "";
+
+        // Optionally cross-filter live tracks by the same camera status filter
+        // (skip if you want live tracks always visible regardless of camera filter)
+        const rows = allLive;
+
+        document.getElementById("empty-live").style.display =
+            rows.length === 0 ? "block" : "none";
+
+        for (const track of rows) {
+            const conf = (track.confidence * 100).toFixed(0);
+            const plate = track.license_plate
+                ? `<span class="lp">${track.license_plate}</span>`
+                : `<span class="muted">—</span>`;
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${track.track_id}</td>
+                <td>${track.camera_id}</td>
+                <td>${track.label}</td>
+                <td>${conf}%</td>
+                <td>${plate}</td>
+                <td class="muted">${relativeTime(track.last_seen)}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+    }
+
+    document.getElementById("statusFilter").addEventListener("change", () => {
+        renderTelemetry();  // re-render with new filter, no re-fetch needed
+    });
+
+    fetchTelemetry();
+    fetchLive();
+    setInterval(fetchTelemetry, 3000);
+    setInterval(fetchLive,      1500);
+</script>
 
 </html>
