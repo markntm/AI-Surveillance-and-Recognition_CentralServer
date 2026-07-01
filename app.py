@@ -8,11 +8,11 @@ import os
 from CC_data.database import engine, Base, SessionLocal
 from CC_data.event_log import *
 from CC_data.models import Behavior, Recognition, VehicleFunction, Event
-from CC_data.schemas import EventIn
+from CC_data.schemas import EventIn, TelemetryIn, LiveTrackIn
 from config.secret import dev_key, allowed_IP
 
 
-app = FastAPI(title="Surveillance Dashboard", version="0.1")
+app = FastAPI(title="Surveillance App", version="0.1")
 templates = Jinja2Templates(directory="CC_dashboard/templates")
 Base.metadata.create_all(bind=engine)
 
@@ -25,6 +25,9 @@ app.add_middleware(
 )
 
 API_KEY = os.getenv("SURVEILLANCE_API_KEY", dev_key)
+
+_telemetry: dict = {}
+_live_tracks: dict = {}
 
 
 def verify_api_key(x_api_key: str = Header(...)):
@@ -149,6 +152,21 @@ def get_events(
     }
 
 
+@app.get("/api/ingest/telemetry")
+def get_telemetry():
+    """Dashboard polls this to get the latest health stats per camera."""
+    return list(_telemetry.values())
+
+
+@app.get("/api/ingest/live")
+def get_live_tracks(camera_id: Optional[str] = None):
+    """Dashboard polls this to get the current live track list."""
+    tracks = list(_live_tracks.values())
+    if camera_id:
+        tracks = [t for t in tracks if t["camera_id"] == camera_id]
+    return tracks
+
+
 @app.post("/api/events", dependencies=[Depends(verify_api_key)])
 def ingest_event(event_in: EventIn, db: Session = Depends(get_db)):
     # 1. Create Event
@@ -182,6 +200,34 @@ def ingest_event(event_in: EventIn, db: Session = Depends(get_db)):
             )
 
     return {"status": "ok", "event_id": event.id}
+
+
+@app.post("/api/ingest/telemetry", dependencies=[Depends(verify_api_key)])
+def post_telemetry(data: TelemetryIn):
+    """Receives health stats from cameras"""
+    _telemetry[data.camera_id] = {
+        "camera_id": data.camera_id,
+        "workers_active": data.workers_active,
+        "lpr_queue_size": data.lpr_queue_size,
+        "active_tracks": data.active_tracks,
+        "last_seen": datetime.utcnow().isoformat()
+    }
+    return {"status": "ok"}
+
+
+@app.post("/api/ingest/live", dependencies=[Depends(verify_api_key)])
+def post_live(data: LiveTrackIn):
+    """Receives per-track live updates from the camera client."""
+    _live_tracks[data.track_id] = {
+        "camera_id": data.camera_id,
+        "track_id": data.track_id,
+        "label": data.label,
+        "confidence": data.confidence,
+        "license_plate": data.license_plate,
+        "last_seen": datetime.utcnow().isoformat()
+    }
+    return {"status": "ok"}
+
 
 if __name__ == "__main__":
     import uvicorn
